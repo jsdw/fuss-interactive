@@ -1,0 +1,52 @@
+#!/usr/bin/env node
+
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser');
+const child_process = require('child_process');
+const env = require('process').env;
+
+const PORT = env.PORT || 3000;
+const FUSS = env.FUSS || "fuss";
+
+app.use(express.static('static'));
+app.use(bodyParser.json());
+
+app.post('/compile', function (req, res) {
+
+    if(!req.body || typeof req.body.css != "string"){
+        res.sendStatus(400)
+        return
+    }
+
+    const css = req.body.css;
+    const fuss = child_process.spawn(FUSS, []);
+
+    let stdout = "";
+    let stderr = "";
+
+    fuss.stdout.on('data', (data) => { stdout += data });
+    fuss.stderr.on('data', (data) => { stderr += data });
+    fuss.stdin.write(css);
+    fuss.stdin.end();
+
+    fuss.on('error', (err) => {
+        res.json({ error: `error running fuss: ${err}` })
+    });
+    fuss.on('close', (code) => {
+        if (code !== 0) {
+            res.json({ error: `fuss exited with non-zero code` })
+        }
+        res.json({
+            output: stdout,
+            error: stderr
+        });
+    });
+
+})
+
+app.listen(PORT, function () {
+    console.log(`Started on port: ${PORT}`);
+    console.log(`fuss command:    ${FUSS}`);
+    console.log(`Pass {"css": "your-css"} to /compile to get back compiled FUSS.`);
+})
