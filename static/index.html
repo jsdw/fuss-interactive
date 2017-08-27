@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+        <title>FUSS to CSS</title>
+    </head>
+    <style type="text/css">
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            margin: 0px;
+            padding: 10px;
+            font-size: 16pt;
+        }
+        .left {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            bottom: 10px;
+            width: calc(50% - 5px);
+            display: flex;
+            flex-direction: column;
+        }
+        .left textarea {
+            width: 100%;
+            height: 100%;
+            font-size: 16pt;
+            padding: 10px;
+        }
+        .right {
+            position: absolute;
+            top: 10px;
+            left: calc(50% + 15px);;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .right textarea {
+            flex-grow: 1;
+            font-size: 16pt;
+            padding: 10px;
+        }
+        .right #error {
+            background-color: #ffb0b0;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        h2 {
+            margin: 0px;
+        }
+    </style>
+    <body>
+        <div class="contents">
+            <div class="left">
+                <h2>FUSS</h2>
+                <textarea id="input"></textarea>
+            </div>
+            <div class="right">
+                <h2>CSS</h2>
+                <div id="error" style="display: none"></div>
+                <textarea id="output"></textarea>
+            </div>
+        </div>
+
+
+        <script type="text/javascript">
+
+            var inputEl = document.getElementById("input");
+            var outputEl = document.getElementById("output");
+            var errorEl = document.getElementById("error");
+
+
+            var textareas = document.getElementsByTagName('textarea');
+            var count = textareas.length;
+            for(var i=0;i<count;i++){
+                textareas[i].onkeydown = function(e){
+                    if(e.keyCode==9 || e.which==9){
+                        e.preventDefault();
+                        var s = this.selectionStart;
+                        this.value = this.value.substring(0,this.selectionStart) + "\t" + this.value.substring(this.selectionEnd);
+                        this.selectionEnd = s+1;
+                    }
+                }
+            }
+
+            inputEl.addEventListener("input", function(){
+                getCompiled(inputEl.value).then(function(res){
+
+                    outputEl.value = res.output ? res.output : "";
+
+                    if(res.error){
+                        errorEl.textContent = res.error;
+                        errorEl.style.display = "initial";
+                    } else {
+                        errorEl.style.display = "none";
+                    }
+
+                });
+            })
+
+            function getCompiled(fuss){
+
+                var myHeaders = new Headers({
+                    "Content-Type": "application/json"
+                });
+
+                var myRequest = new Request('/compile', {
+                    method: "POST",
+                    headers: myHeaders,
+                    body: JSON.stringify({ fuss: fuss })
+                });
+
+                return fetch(myRequest).then(function(res){
+                    return res.json();
+                });
+
+            }
+
+        </script>
+    </body>
+</html>

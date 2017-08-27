@@ -14,12 +14,12 @@ app.use(bodyParser.json());
 
 app.post('/compile', function (req, res) {
 
-    if(!req.body || typeof req.body.css != "string"){
+    if(!req.body || typeof req.body.fuss != "string"){
         res.sendStatus(400)
         return
     }
 
-    const css = req.body.css;
+    const text = req.body.fuss;
     const fuss = child_process.spawn(FUSS, []);
 
     let stdout = "";
@@ -27,7 +27,7 @@ app.post('/compile', function (req, res) {
 
     fuss.stdout.on('data', (data) => { stdout += data });
     fuss.stderr.on('data', (data) => { stderr += data });
-    fuss.stdin.write(css);
+    fuss.stdin.write(text);
     fuss.stdin.end();
 
     fuss.on('error', (err) => {
