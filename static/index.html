@@ -141,7 +141,6 @@
             var outputEl = document.getElementById("output");
             var errorEl = document.getElementById("error");
 
-
             var textareas = document.getElementsByTagName('textarea');
             var count = textareas.length;
             for(var i=0;i<count;i++){
@@ -177,6 +176,12 @@
             inputEl.addEventListener("input", function(){
                 runner()
             })
+
+            window.onbeforeunload = function(){
+                localStorage.setItem("fuss", inputEl.value);
+            };
+            var before = localStorage.getItem("fuss");
+            if(before) { inputEl.value = before; runner() }
 
             function queueStuff(o){
 
