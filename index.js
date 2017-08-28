@@ -24,6 +24,7 @@ app.post('/compile', function (req, res) {
 
     let stdout = "";
     let stderr = "";
+    let bError = false;
 
     fuss.stdout.on('data', (data) => { stdout += data });
     fuss.stderr.on('data', (data) => { stderr += data });
@@ -31,11 +32,16 @@ app.post('/compile', function (req, res) {
     fuss.stdin.end();
 
     fuss.on('error', (err) => {
+        bError = true;
         res.json({ error: `error running fuss: ${err}` })
     });
     fuss.on('close', (code) => {
+        if(bError){
+            return;
+        }
         if (code !== 0) {
-            res.json({ error: `fuss exited with non-zero code` })
+            res.json({ error: `fuss exited with non-zero code` });
+            return;
         }
         res.json({
             output: stdout,

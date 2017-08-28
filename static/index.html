@@ -4,7 +4,7 @@
         <meta http-equiv="content-type" content="text/html; charset=utf-8">
         <title>FUSS to CSS</title>
     </head>
-    <style type="text/css">
+    <style type="text/fuss">
         * {
             box-sizing: border-box;
         }
@@ -54,11 +54,74 @@
             margin: 0px;
         }
     </style>
+    <style type="text/css">
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            margin: 0px;
+            padding: 10px;
+            font-size: 16pt;
+        }
+        .left {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            bottom: 10px;
+            width: calc(50% - 5px);
+            display: flex;
+            flex-direction: column;
+        }
+        .left .input-textarea {
+            position: relative;
+            flex-grow: 1;
+        }
+        .left .input-textarea > * {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        .left textarea {
+            display: block;
+            padding: 10px;
+            font-size: 16pt;
+            width: 100%;
+        }
+        .right {
+            position: absolute;
+            top: 10px;
+            left: calc(50% + 15px);;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .right textarea {
+            flex-grow: 1;
+            font-size: 16pt;
+            padding: 10px;
+        }
+        .right #error {
+            background-color: #ffb0b0;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        h2 {
+            margin: 0px;
+        }
+    </style>
     <body>
         <div class="contents">
             <div class="left">
                 <h2>FUSS</h2>
-                <textarea id="input"></textarea>
+                <div class="input-textarea">
+                    <textarea id="input"></textarea>
+                </div>
             </div>
             <div class="right">
                 <h2>CSS</h2>
@@ -71,6 +134,7 @@
         <script type="text/javascript">
 
             var inputEl = document.getElementById("input");
+            var inputErrorsEl = document.getElementById("input-errors");
             var outputEl = document.getElementById("output");
             var errorEl = document.getElementById("error");
 
@@ -88,20 +152,52 @@
                 }
             }
 
-            inputEl.addEventListener("input", function(){
-                getCompiled(inputEl.value).then(function(res){
-
-                    outputEl.value = res.output ? res.output : "";
-
+            var runner = queueStuff({
+                request: function(){
+                    return getCompiled(inputEl.value);
+                },
+                success: function(res){
                     if(res.error){
                         errorEl.textContent = res.error;
                         errorEl.style.display = "initial";
                     } else {
+                        outputEl.value = res.output ? res.output : "";
                         errorEl.style.display = "none";
                     }
-
-                });
+                },
+                error: function(err){
+                    errorEl.textContent = err;
+                    errorEl.style.display = "initial";
+                }
             })
+
+            inputEl.addEventListener("input", function(){
+                runner()
+            })
+
+            function queueStuff(o){
+
+                var next = false;
+                var running = false;
+
+                function doNext(){
+                    if(next) {
+                        var n = next;
+                        next = false;
+                        n().then(doNext, doNext);
+                    }
+                    else running = false;
+                }
+
+                return function(){
+                    if(running){
+                        next = o.request;
+                        return;
+                    }
+                    o.request().then(o.success, o.error).then(doNext, doNext);
+                }
+
+            }
 
             function getCompiled(fuss){
 
